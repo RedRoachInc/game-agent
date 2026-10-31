@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Game Configuration",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "engine": { "type": "string" },
+    "engine_version": { "type": "string" },
+    "genre": { "type": "string" },
+    "dimension": { "type": "string" },
+    "gameplay": { "type": "object" },
+    "levels": { "type": "object" },
+    "quality": { "type": "object" }
+  },
+  "required": ["name", "engine"]
+}

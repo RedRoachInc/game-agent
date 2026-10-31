@@ -8,3 +8,11 @@ wheels/
 
 # Virtual environments
 .venv
+
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+.godot/
