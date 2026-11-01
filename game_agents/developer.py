@@ -1,7 +1,8 @@
 from agents import Agent
+
 from core.context import GameContext
 from tools.files import list_files, read_file, write_file
-from tools.godot import validate_project, update_project_setting
+from tools.godot import configure_input_action, update_project_setting, validate_project
 
 INSTRUCTIONS="""
 You are a senior Godot 4 game developer.
@@ -31,6 +32,7 @@ def create_developer_agent() -> Agent[GameContext]:
             read_file,
             write_file,
             validate_project,
-            update_project_setting
+            update_project_setting,
+            configure_input_action
         ]
     )

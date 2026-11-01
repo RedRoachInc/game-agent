@@ -81,12 +81,12 @@ def update_project_setting(
         "/Applications/Godot.app/Contents/MacOS/Godot",
     )
 
-    script = """
+    script = f"""
 extends SceneTree
 
 func _initialize() -> void:
-    var setting = %s
-    var value = %s
+    var setting = {json.dumps(setting)}
+    var value = {json.dumps(typed_value)}
     ProjectSettings.set_setting(setting, value)
     var err = ProjectSettings.save()
     if err != OK:
@@ -94,10 +94,7 @@ func _initialize() -> void:
         quit(1)
         return
     quit(0)
-""" % (
-        json.dumps(setting),
-        json.dumps(typed_value),
-    )
+"""
 
     script_path = None
 
@@ -206,84 +203,139 @@ def validate_project(
     return json.dumps(result)
 
 
-# @function_tool
-# def update_project_setting(
-#     ctx: RunContextWrapper[GameContext],
-#     setting: str,
-#     value: str,
-# ) -> str:
-#     """Update an allowed Godot project setting.
+@function_tool
+def configure_input_action(
+    ctx: RunContextWrapper[GameContext],
+    action: str,
+    key: str,
+    replace_existing: bool = False,
+) -> str:
+    """Create or update a Godot keyboard input action.
 
-#     Args:
-#         setting: Godot setting path, e.g. application/run/main_scene.
-#         value: Setting value as a string.
-#     """
-#     allowed_settings = {
-#         "application/run/main_scene",
-#         "application/config/name",
-#     }
+    Args:
+        action: Input action name, e.g. return_to_menu.
+        key: Physical key name, e.g. Escape, W, Space, Left.
+        replace_existing: Remove existing bindings before adding the key.
+    """
+    import re
 
-#     if setting not in allowed_settings:
-#         return f"Setting not allowed: {setting}"
+    if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", action):
+        return "Invalid input action name"
 
-#     if setting == "application/run/main_scene":
-#         if not value.startswith("res://"):
-#             return "Main scene must use a res:// path"
+    if not key or len(key) > 40:
+        return "Invalid key name"
 
-#         relative_path = value.removeprefix("res://")
-#         scene = (ctx.context.project_path / relative_path).resolve()
-#         root = ctx.context.project_path.resolve()
+    project = ctx.context.project_path.resolve()
 
-#         if not scene.is_relative_to(root) or not scene.is_file():
-#             return f"Scene not found: {value}"
+    if not (project / "project.godot").is_file():
+        return "Godot project not found"
 
-#     try:
-#         from pathlib import Path
-#         import subprocess
-#         import os
+    godot_bin = os.getenv(
+        "GODOT_BIN",
+        "/Applications/Godot.app/Contents/MacOS/Godot",
+    )
 
-#         # Use Godot itself to modify project settings
-#         script = '''
-# extends SceneTree
+    # Embed values as escaped string literals.
+    action_literal = json.dumps(action)
+    key_literal = json.dumps(key)
+    replace_literal = "true" if replace_existing else "false"
 
-# func _initialize():
-#     ProjectSettings.set_setting(
-#         "%s",
-#         "%s"
-#     )
-#     ProjectSettings.save()
-#     quit()
-# ''' % (setting, value.replace("\\", "\\\\").replace('"', '\\"'))
+    script = f"""
+extends SceneTree
 
-#         script_path = ctx.context.project_path / "_update_settings.gd"
+func _initialize() -> void:
+    var action_name: String = {action_literal}
+    var key_name: String = {key_literal}
+    var replace: bool = {replace_literal}
 
-#         script_path.write_text(script, encoding="utf-8")
+    var keycode: Key = OS.find_keycode_from_string(key_name)
 
-#         godot_bin = os.getenv(
-#             "GODOT_BIN",
-#             "/Applications/Godot.app/Contents/MacOS/Godot"
-#         )
+    if keycode == KEY_NONE:
+        push_error("Unknown key: " + key_name)
+        quit(1)
+        return
 
-#         result = subprocess.run(
-#             [
-#                 godot_bin,
-#                 "--headless",
-#                 "--path",
-#                 str(ctx.context.project_path),
-#                 "--script",
-#                 str(script_path),
-#             ],
-#             capture_output=True,
-#             text=True,
-#             timeout=30,
-#         )
+    var event := InputEventKey.new()
+    event.physical_keycode = keycode
 
-#         script_path.unlink(missing_ok=True)
+    var setting_name := "input/" + action_name
 
-#         if result.returncode != 0:
-#             return f"Failed: {result.stderr}"
+    var existing_events: Array[InputEvent] = []
+    var deadzone: float = 0.5
 
-#         return f"Updated {setting} = {value}"
+    if ProjectSettings.has_setting(setting_name) and not replace:
+        var existing: Dictionary = ProjectSettings.get_setting(
+            setting_name
+        )
+        deadzone = existing.get("deadzone", 0.5)
+        for existing_event in existing.get("events", []):
+            if existing_event is InputEvent:
+                existing_events.append(existing_event)
 
-#     except Exception as error:
-#         return f"Failed to update setting: {error}"
+    for existing_event in existing_events:
+        if existing_event is InputEventKey:
+            if existing_event.physical_keycode == keycode:
+                print("Key already configured")
+                quit(0)
+                return
+
+    existing_events.append(event)
+
+    ProjectSettings.set_setting(setting_name, {{
+        "deadzone": deadzone,
+        "events": existing_events,
+    }})
+
+    var err := ProjectSettings.save()
+
+    if err != OK:
+        push_error("Failed to save project.godot")
+        quit(1)
+        return
+
+    print("Configured: " + action_name + " -> " + key_name)
+    quit(0)
+"""
+
+    script_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".gd",
+            prefix="_input_action_",
+            dir=project,
+            delete=False,
+            encoding="utf-8",
+        ) as temp:
+            temp.write(script)
+            script_path = Path(temp.name)
+
+        result = subprocess.run(
+            [
+                godot_bin,
+                "--headless",
+                "--path", str(project),
+                "--script", str(script_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        output = result.stdout + "\n" + result.stderr
+
+        if result.returncode != 0 or "SCRIPT ERROR:" in output:
+            return f"Input configuration failed:\n{output}"
+
+        return (
+            f"Configured input action '{action}' "
+            f"with physical key '{key}'.\n{output}"
+        )
+
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"Input configuration failed: {exc}"
+
+    finally:
+        if script_path is not None:
+            script_path.unlink(missing_ok=True)

@@ -16,3 +16,4 @@ wheels/
 __pycache__/
 .pytest_cache/
 .godot/
+history.db
