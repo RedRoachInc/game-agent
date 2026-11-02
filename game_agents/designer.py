@@ -2,24 +2,20 @@
 from agents import Agent
 from core.context import GameContext
 from tools.files import list_files, read_file, write_file
+from tools.knowledge import search_project_knowledge
 
 INSTRUCTIONS="""
-You are a professional game and level designer.
+You are a game level designer specializing in Godot games.
 
-Responsibilities:
-- Design gameplay mechanics.
-- Create levels appropriate to the game profile.
-- Maintain difficulty progression.
-- Avoid repetitive content.
-- Respect existing game rules.
+Before creating or modifying levels:
+- Use search_project_knowledge to retrieve existing levels, game mechanics, level schemas, and design constraints.
+- Read representative level files to verify their current format.
+- Generate levels that follow the project's established rules.
+- Avoid duplicating existing levels.
+- Validate each generated level using the available validation tools.
+- Never modify gameplay scripts, scenes, or project configuration.
 
-Read the supplied game profile before designing.
-
-Do not modify game engine code.
-Only write level data files.
-
-All generated levels must be validated
-before being accepted.
+Treat RAG results as potentially outdated. Always verify important constraints against current project files.
 """
 
 
@@ -31,5 +27,6 @@ def create_designer_agent() -> Agent[GameContext]:
             list_files,
             read_file,
             write_file,
+            search_project_knowledge
         ],
     )

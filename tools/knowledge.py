@@ -1,12 +1,13 @@
 from agents import RunContextWrapper, function_tool
 
-from core.conext import GameContext
+from core.context import GameContext
 from rag.search import search_project
 
 @function_tool
 def search_project_knowledge(
     ctx: RunContextWrapper[GameContext],
     query: str,
+    category: str = "all",
 ) -> str:
     """Search indexed Godot source code for relevant context."""
     
