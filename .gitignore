@@ -17,3 +17,4 @@ __pycache__/
 .pytest_cache/
 .godot/
 data/
+/.DS_Store 

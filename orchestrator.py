@@ -9,26 +9,22 @@ from core.context import GameContext
 from game_agents.developer import create_developer_agent
 from game_agents.designer import create_designer_agent
 from game_agents.qa import create_qa_agent
+from tools.tests import run_quality_checks
 
 
 class GameOrchestrator:
     def __init__(
         self,
-        project_path: Path,
-        profile_path: Path,
+        project_path: Path
     ):
         self.project_path = project_path.resolve()
 
         if not (self.project_path / "project.godot").is_file():
             raise ValueError("Invalid Godot project")
 
-        with profile_path.open() as file:
-            self.profile = yaml.safe_load(file)
-
         self.context = GameContext(
             project_name=self.project_path.name,
             project_path=self.project_path,
-            profile=self.profile,
         )
 
         self.agents = {
@@ -43,10 +39,15 @@ class GameOrchestrator:
 
         agent = self.agents[role]
 
+        # prompt = (
+        #     "Project profile:\n"
+        #     + json.dumps(self.profile, indent=2)
+        #     + "\n\nTask:\n"
+        #     + task
+        # )
+        
         prompt = (
-            "Project profile:\n"
-            + json.dumps(self.profile, indent=2)
-            + "\n\nTask:\n"
+            "\n\nTask:\n"
             + task
         )
 
@@ -59,7 +60,21 @@ class GameOrchestrator:
         
         
 
-        return result.final_output
-    
+        qa = None
+
+        # if role in ("developer", "designer"):
+        #     if self.profile.get("quality", {}).get("require_tests", False):
+        #         qa = run_quality_checks(self.context)
+
+        return {
+            "status": (
+                "failed_qa"
+                if qa is not None and not qa["success"]
+                else "completed"
+            ),
+            "output": result.final_output,
+            "qa": qa,
+        }
+            
 
 

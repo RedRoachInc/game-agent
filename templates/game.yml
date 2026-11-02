@@ -1,0 +1,77 @@
+
+schema_version: "1.0"
+
+project:
+  name: ""
+  display_name: ""
+  description: ""
+  status: draft
+
+engine:
+  name: godot
+  version: "4.7"
+  language: gdscript
+  dimension: 2D
+  renderer: gl_compatibility
+
+game:
+  genre: ""
+  perspective: ""
+  platform:
+    - desktop
+
+  mechanics: {}
+
+  actions: []
+
+architecture:
+  patterns:
+    - component_based
+    - signal_driven
+
+  directories:
+    scripts: scripts/
+    scenes: scenes/
+    levels: levels/
+    assets: assets/
+    tests: tests/
+
+  systems: []
+
+levels:
+  enabled: false
+  format: json
+  directory: levels/
+  initial_count: 0
+
+  difficulty:
+    progression: increasing
+
+  validation:
+    - schema
+
+quality:
+  require_tests: true
+  require_review: true
+  preserve_existing_files: true
+
+initialization:
+  status: pending
+
+  tasks:
+    - create_directories
+    - configure_project
+    - configure_input
+    - create_core_classes
+    - create_main_scene
+    - validate_project
+
+  acceptance:
+    - project_opens_without_errors
+    - main_scene_runs
+
+automation:
+  allow_level_generation: false
+  allow_feature_development: true
+  allow_automatic_merge: false
+  allow_automatic_release: false

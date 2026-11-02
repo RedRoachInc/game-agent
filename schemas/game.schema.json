@@ -1,16 +1,59 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AI Game Configuration",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Game Project Specification",
   "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "engine",
+    "game",
+    "initialization"
+  ],
   "properties": {
-    "name": { "type": "string" },
-    "engine": { "type": "string" },
-    "engine_version": { "type": "string" },
-    "genre": { "type": "string" },
-    "dimension": { "type": "string" },
-    "gameplay": { "type": "object" },
-    "levels": { "type": "object" },
-    "quality": { "type": "object" }
-  },
-  "required": ["name", "engine"]
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "project": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string"},
+        "display_name": {"type": "string"},
+        "description": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "engine": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "godot"},
+        "version": {"type": "string"},
+        "language": {"type": "string"},
+        "dimension": {"enum": ["2D", "3D"]},
+        "renderer": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "game": {"type": "object"},
+    "architecture": {"type": "object"},
+    "levels": {"type": "object"},
+    "quality": {"type": "object"},
+    "initialization": {
+      "type": "object",
+      "required": ["tasks", "acceptance"],
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "acceptance": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
 }

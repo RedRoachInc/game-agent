@@ -7,4 +7,3 @@ class GameContext:
     project_name: str
     project_path: Path
     profile: dict = field(default_factory=dict)
-    task_id: str = ""

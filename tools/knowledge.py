@@ -3,34 +3,35 @@ from agents import RunContextWrapper, function_tool
 from core.context import GameContext
 from rag.search import search_project
 
+
 @function_tool
 def search_project_knowledge(
     ctx: RunContextWrapper[GameContext],
     query: str,
-    category: str = "all",
 ) -> str:
     """Search indexed Godot source code for relevant context."""
-    
+
     matches = search_project(
         project_path=ctx.context.project_path,
         query=query,
-        limit=5
+        limit=5,
     )
-    
+
     if not matches:
-        return(
-            "No results found. Index the project first "
-            "using python -m rag.indexer."
+        return (
+            "No indexed results found. "
+            "Index the project using python -m rag.indexer."
         )
-        
+
     sections = []
-    
+
     for match in matches:
         sections.append(
-            f"File: {match['path']}\n",
-            f"Lines: {match['start_line']}-",
-            f"{match['end_line']}\n",
-            f"Code: {match['content']}"
+            f"File: {match['path']}\n"
+            f"Lines: {match['start_line']}-"
+            f"{match['end_line']}\n"
+            f"Distance: {match['distance']:.4f}\n"
+            f"Code:\n{match['content']}"
         )
-        
+
     return "\n\n---\n\n".join(sections)

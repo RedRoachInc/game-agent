@@ -1,7 +1,6 @@
 from pathlib import Path
-import chromadb
-from dotenv import load_dotenv
 
+import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 ROOT = Path(__file__).resolve().parents[1]

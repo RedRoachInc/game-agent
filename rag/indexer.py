@@ -52,13 +52,18 @@ def index_project(project_path: Path) -> None:
         
         relative = path.relative_to(project_path)
         
+       
+
         if any(
             part in EXCLUDED_DIRS
             for part in relative.parts
         ): continue
         
+        if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+        
         if path.stat().st_size > 1_000_000:
-            print(f"Skpping large files: {relative}")
+            print(f"Skipping large files: {relative}")
             continue
         
         try:
@@ -81,16 +86,16 @@ def index_project(project_path: Path) -> None:
                 f"{pid}:{relative}:{index}".encode()
             ).hexdigest()
             
-        ids.append(chunk_id)
-        documents.append(chunk["text"])
-        
-        metadatas.append({
-            "project_id": pid,
-            "path": str(relative),
-            "extension": path.suffix.lower(),
-            "start_line": chunk["start_line"],
-            "end_line": chunk["end_line"]
-        })
+            ids.append(chunk_id)
+            documents.append(chunk["text"])
+            
+            metadatas.append({
+                "project_id": pid,
+                "path": str(relative),
+                "extension": path.suffix.lower(),
+                "start_line": chunk["start_line"],
+                "end_line": chunk["end_line"]
+            })
         
         collection.upsert(
             ids=ids,

@@ -72,3 +72,23 @@ def write_file(
     target.write_text(content, encoding="utf-8")
 
     return f"Saved: {path}"
+
+
+@function_tool
+def write_level_file(
+    ctx: RunContextWrapper[GameContext],
+    path: str,
+    content: str,
+) -> str:
+    """Create or update a Godot script, scene, resource or JSON file."""
+    target = safe_path(ctx.context, path)
+
+    allowed = {".json"}
+
+    if target.suffix.lower() not in allowed:
+        return f"Unsupported file type: {target.suffix}"
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+
+    return f"Saved: {path}"
